@@ -1,0 +1,11 @@
+[color]
+ui = auto
+[alias]
+co = checkout
+st = status
+[grep]
+lineNumber=true
+extendedRegexp = true
+[status]
+submoduleSummary = true
+showUntrackedFiles = all

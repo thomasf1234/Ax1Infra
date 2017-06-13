@@ -1,0 +1,147 @@
+#!/bin/bash
+#exit on error
+
+#######################################
+BASENAME=`basename $0`
+function pack {
+  local SRC_DIR=$1
+  local AX1_PACKAGE_IGNORE_BOOL=$2
+  local APP_NAME=$(basename $SRC_DIR)
+
+  BUILD_DIR="${SRC_DIR}/build"
+  echo "Ensuring ${BUILD_DIR} exists"
+  mkdir -p $BUILD_DIR
+
+  echo "Clearing out previously built packages and checkouts"
+  rm -rf "${BUILD_DIR}/*.tgz"
+
+  PUBLIC_DIR="${SRC_DIR}/public"
+  echo "Ensuring ${PUBLIC_DIR} dir exists"
+  mkdir -p $PUBLIC_DIR
+
+  local GIT_DIR="${SRC_DIR}/.git"
+  if [[ -d $GIT_DIR ]]
+  then
+    git_revision=$(git --git-dir $GIT_DIR rev-parse origin/master)
+    echo "git:${git_revision}" > "${PUBLIC_DIR}/version.txt"
+  fi
+
+  build_label=$(hostname)
+  if 	[ -n "${GO_PIPELINE_COUNTER}" ]
+  then
+  	build_label="${GO_PIPELINE_COUNTER}"
+  fi
+  echo "build-label:${build_label}" >> "${PUBLIC_DIR}/version.txt"
+
+  AX1_PACKAGE_IGNORE="${SRC_DIR}/.ax1packageignore"
+  echo "ensuring ${AX1_PACKAGE_IGNORE} exists"
+  touch $AX1_PACKAGE_IGNORE
+
+  local ARTIFACT_NAME="${APP_NAME}-release.tgz"
+  local RELEASE_PATH="${BUILD_DIR}/${ARTIFACT_NAME}"
+
+  echo "packing ${SRC_DIR} to ${RELEASE_PATH}"
+  EXCLUDES="--exclude=build --exclude=.git --exclude=.gitignore --exclude=.ax1packageignore"
+  tar -zc -f $RELEASE_PATH  -C $SRC_DIR $EXCLUDES --exclude-from="${SRC_DIR}/.ax1packageignore" .
+  #send a file with the key
+
+  #example: curl -k 'https://ci.example.com/go/files/PipelineName/541/StageName/1/JobName/path/to/file' -u 'username:password'
+  local SRC_URL="https://${GO_SERVER_IP}/go/files/${GO_PIPELINE_NAME}/${GO_PIPELINE_COUNTER}/${GO_STAGE_NAME}/${GO_STAGE_COUNTER}/${GO_JOB_NAME}/${ARTIFACT_NAME}"
+  local CHECKSUM=$(sha256sum $RELEASE_PATH |awk '{print$1}')
+  cp /dev/null ${RELEASE_PATH}.json
+
+  echo "creating file ${RELEASE_PATH}.json"
+  echo -e "{\"checksum_algorithm\":\"SHA-256\", \"checksum\":\"$CHECKSUM\", \"goartifact_source_url\":\"$SRC_URL\"}"  > ${RELEASE_PATH}.json
+}
+
+function unpack {
+  local PACKAGE=$1
+  local DEST_DIR=$2
+
+  echo "unpacking ${PACKAGE} to ${DEST_DIR}"
+  tar -mxz -f $PACKAGE -C $DEST_DIR
+}
+
+function validate_arg_count {
+  local ARG_COUNT=$1
+  local EXPECTED_ARG_COUNT=$2
+
+  if [[ "${ARG_COUNT}" -ne $EXPECTED_ARG_COUNT ]]
+  then
+    echo "incorrect number of arguments"
+    echo "${usage}"
+    exit 1
+  fi
+}
+
+#######################################
+
+usage="${BASENAME} [-h] [-p path] [-u package] -- package utility to pack and unpack an application
+
+SYNOPSIS
+   ax1package -p [directory]
+   ax1package -u [package.tgz] [destination]
+
+where:
+    -h, --help       show this message
+    -p 'directory'   directory source for package, excluding files listed in the .ax1packageignore file under directory
+    -u 'package.tgz' unpack the package"
+
+
+for arg in "$@"
+do
+  if [[ "${arg}" == "-h" ]] || [[ "${arg}" == "--help" ]]
+  then
+    echo "${usage}"
+    exit
+  fi
+done
+
+if [[ "$1" == "-p" ]]
+then
+  validate_arg_count $# 2
+
+  SRC_DIR=$(readlink -f $2)
+  AX1_PACKAGE_IGNORE_BOOL=false
+
+  if [[ ! -d "${SRC_DIR}" ]]
+  then
+    echo "directory ${SRC_DIR} does not exist"
+    exit 1
+  fi
+
+  AX1_PACKAGE_IGNORE="${SRC_DIR}/.ax1packageignore"
+
+  if [[ -f "${AX1_PACKAGE_IGNORE}" ]]
+  then
+    AX1_PACKAGE_IGNORE_BOOL=true
+  fi
+
+  pack $SRC_DIR $AX1_PACKAGE_IGNORE_BOOL
+  echo "Done"
+elif [[ "$1" == "-u" ]]
+then
+  validate_arg_count $# 3
+
+  PACKAGE=$(readlink -f $2)
+  DEST_DIR=$(readlink -f $3)
+
+  if [[ -e "${DEST_DIR}" ]]
+  then
+    if [[ ! -d "${DEST_DIR}" ]]
+    then
+      echo "${DEST_DIR} exists but is not a directory"
+      exit 1
+    fi
+  else
+    echo "ensuring ${DEST_DIR} exists"
+    mkdir -p $DEST_DIR
+  fi
+
+  unpack $PACKAGE $DEST_DIR
+  echo "Done"
+else
+  echo "unknown option -- $1"
+  echo "${usage}"
+  exit 1
+fi
