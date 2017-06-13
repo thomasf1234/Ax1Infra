@@ -16,3 +16,4 @@ clean_up_vagrant.sh
 .fppackageignore
 artifacts/
 P
+puppetlabs-release.tgz

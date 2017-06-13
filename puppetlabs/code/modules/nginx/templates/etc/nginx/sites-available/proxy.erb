@@ -1,0 +1,20 @@
+server {
+  listen                    <%= @proxy_listen %>;
+
+  #disables emitting nginx version in error messages and in the “Server” response header field.
+  server_tokens off;
+
+  #Add this proxy host and server port to header
+  proxy_set_header Host $host:$server_port;
+
+  #Append the remote users IP to any existing X-Forwarded-For value:
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+  access_log  /var/log/nginx/<%= @proxy_name %>.access.log;
+  error_log  /var/log/nginx/<%= @proxy_name %>.error.log;
+
+  # Proxy everything over to the local server
+  location / {
+    proxy_pass <%= @proxy_pass %>;
+  }
+}

@@ -12,6 +12,7 @@ include base
 
 node "default" {
   include role::developer
+  include role::proxy
 }
 
 stage { 'post-main':
