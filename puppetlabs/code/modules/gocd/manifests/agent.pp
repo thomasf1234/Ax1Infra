@@ -1,6 +1,6 @@
 define gocd::agent(
   $go_server_ip,
-  $go_server_port,
+  $go_server_ssl_port,
 ) {
 
   file {

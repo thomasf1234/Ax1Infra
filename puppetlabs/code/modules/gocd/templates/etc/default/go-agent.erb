@@ -1,4 +1,9 @@
-GO_SERVER_URL=https://<%= @go_server_ip %>:<%= @go_server_port %>/go
+GO_SERVER_URL=https://<%= @go_server_ip %>:<%= @go_server_ssl_port %>/go
+GO_SERVER_IP=<%= @go_server_ip %>
 AGENT_WORK_DIR=/var/lib/${SERVICE_NAME:-go-agent}
 DAEMON=Y
 VNC=N
+export GO_SERVER_URL
+export GO_SERVER_IP
+export AGENT_WORK_DIR
+export JAVA_HOME

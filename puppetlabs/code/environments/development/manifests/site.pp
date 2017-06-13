@@ -15,6 +15,10 @@ node "default" {
   include role::proxy
 }
 
+node "ax1-gobase" {
+  include role::gocd_base
+}
+
 stage { 'post-main':
  require => Stage['main']
 }
