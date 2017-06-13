@@ -4,7 +4,7 @@ module Ax1Infra
       @host = host
       @port = port
       @environment = environment
-      @terminal = Ax1Utils::Terminal.new
+      @terminal = Terminal.new
     end
 
     def bootstrap
@@ -26,10 +26,14 @@ module Ax1Infra
       remote_manifest_path = "/etc/puppetlabs/code/environments/#{@environment}/manifests"
 
       Ax1Utils::SLogger.instance.debug($log_name, "Running Manifest: #{remote_manifest_path}")
+      ssh_command = @terminal.ssh_command("deploy", @host, @port, "sudo /opt/puppetlabs/bin/puppet apply --debug --verbose --environment #{@environment} --detailed-exitcodes #{remote_manifest_path}", ssh_options)
       begin
-        @terminal.log_exec(@terminal.ssh_command("deploy", @host, @port, "sudo /opt/puppetlabs/bin/puppet apply --debug --verbose --environment #{@environment} --detailed-exitcodes #{remote_manifest_path}", ssh_options), $log_path)
+        @terminal.log_exec(ssh_command, $log_path)
       rescue Ax1Utils::ShellException => se
         unless se.exitstatus == PuppetExitStatus::RUN_SUCCEEDED_SOME_RESOURCES_CHANGED
+          Ax1Utils::SLogger.instance.error($log_name, "Exception ocurred while executing command #{ssh_command}")
+          Ax1Utils::SLogger.instance.error($log_name, "#{se.class}:#{se.message}")
+          Ax1Utils::SLogger.instance.error($log_name, se.backtrace.join("\n"))
           raise se
         end
       end

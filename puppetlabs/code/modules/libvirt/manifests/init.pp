@@ -1,7 +1,6 @@
 class libvirt {
   package {'qemu-kvm':
-    ensure => latest,
-    unless => "egrep '(vmx|svm)' /proc/cpuinfo"
+    ensure => latest
   }
 
   package {'libvirt-bin':

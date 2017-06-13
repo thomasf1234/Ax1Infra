@@ -1,6 +1,9 @@
 class profile::developer {
   include openssl
   include sqlite
+  include git
+  include ruby
+  include libvirt
 
   $user = 'developer'
   $user_home = "/home/${user}"
@@ -22,27 +25,13 @@ class profile::developer {
     require => User[$user]
   }
 
-  include ssh
+  class {"ssh":
+    allow_password_authentication => false
+  }
 
   ssh::user {$user:
     user_home => $user_home,
     require => [ Class['ssh'], User[$user] ]
   }
-
-  exec {"ensure cannot ssh via password":
-    command => "sed -i 's/.*PasswordAuthentication yes.*/PasswordAuthentication no/' /etc/ssh/sshd_config",
-    require => Class["ssh"],
-    notify => Service["ssh"]
-  }
-
-  service {"ssh":
-    ensure => running,
-    enable => true,
-    hasstatus => true,
-    require => Class["ssh"]
-  }
-
-  include git
-  include ruby
 }
 
