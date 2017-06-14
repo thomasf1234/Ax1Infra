@@ -6,21 +6,14 @@ class yugioh_x2 (
   $health_check_end_point
 ) {
   $bundle_executable = "/usr/local/bin/ruby2.4/bundle"
-  $owner = 'yugioh_x2'
-  $artifact_source_path = "puppet:///yugioh_x2/sources/yugioh_x2-release.tgz.json"
-  $artifact_source = utils_json_parse($artifact_source_path)
-
-  user { $owner:
-    ensure     => present,
-    managehome => true
-  }
+  $artifact_source_content = file("yugioh_x2/sources/yugioh_x2-release.tgz.json")
+  $artifact_source = utils_json_parse($artifact_source_content)
 
   $server_pid_path = utils_file_join($server_root, "tmp/pids/server.pid")
   exec {"ensure ${owner} is stopped":
     command => "${bundle_executable} exec rake admin:server:stop",
     cwd => $server_root,
-    onlyif => "test -f ${server_pid_path}",
-    require => User[$owner]
+    onlyif => "test -f ${server_pid_path}"
   }
 
   # utils::download { "${service_name} artifact":

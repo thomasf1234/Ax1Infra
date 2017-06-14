@@ -34,30 +34,52 @@ class BootstrapGoServer
 
   def bootstrap_cruise_config
     if File.exist?(CRUISE_CONFIG_PATH)
-      existing_cruise_config = REXML::Document.new(File.read(CRUISE_CONFIG_PATH))
-      server_element = existing_cruise_config.get_elements("//server").first
+      cruise_config_rexml = REXML::Document.new(File.read(CRUISE_CONFIG_PATH))
 
-      if server_element.nil?
-        puts "No <server> element found in #{CRUISE_CONFIG_PATH}. Exiting"
-      else
-        server_element.add_attribute('agentAutoRegisterKey', AGENT_AUTO_REGISTER_KEY)
+      bootstrap_security_element(cruise_config_rexml)
+      bootstrap_pipelines_elements(cruise_config_rexml)
 
-        if server_element.get_elements("//security").empty?
-          puts "No <security> element found. Adding a default configuration"
-          security_element = build_default_security_element
-          server_element.add_element(security_element)
-
-          File.open(CRUISE_CONFIG_PATH,"w") do |file|
-            existing_cruise_config.write(file)
-          end
-        else
-          puts "An existing <security> element found. Skipping bootstrap_cruise_config"
-        end
+      File.open(CRUISE_CONFIG_PATH, "w") do |file|
+        cruise_config_rexml.write(file)
       end
+
+      puts "finished bootstrap"
     else
       puts "No cruise-config.xml found at #{CRUISE_CONFIG_PATH}. Skipping bootstrap_cruise_config"
     end
   end
+
+  def bootstrap_security_element(cruise_config_rexml)
+    server_element = cruise_config_rexml.get_elements("//server").first
+
+    if server_element.nil?
+      puts "No <server> element found in #{CRUISE_CONFIG_PATH}. Exiting"
+    else
+      server_element.add_attribute('agentAutoRegisterKey', AGENT_AUTO_REGISTER_KEY)
+
+      if server_element.get_elements("//security").empty?
+        puts "No <security> element found. Adding a default configuration"
+        security_element = build_default_security_element
+        server_element.add_element(security_element)
+      else
+        puts "An existing <security> element found. Skipping bootstrap_cruise_config"
+      end
+    end
+  end
+
+  def bootstrap_pipelines_elements(cruise_config_rexml)
+    existing_pipelines_elements = cruise_config_rexml.get_elements("//pipelines")
+
+    if existing_pipelines_elements.empty?
+      puts "No <pipelines> element found in #{CRUISE_CONFIG_PATH}. Adding default"
+      build_pipelines_elements.reverse.each do |pipelines_element|
+        cruise_config_rexml.root.insert_after("//server", pipelines_element)
+      end
+    else
+      puts "An existing <pipelines> element found. Skipping bootstrap_pipelines_element"
+    end
+  end
+
 
   def build_default_security_element
     rexml = REXML::Element.new('security')
@@ -129,6 +151,152 @@ class BootstrapGoServer
 
   def htpasswd_entry(username, password)
     "#{username}:{SHA}#{Digest::SHA1.base64digest(password)}"
+  end
+
+  def build_pipelines_elements
+    pipelines_elements_raw = <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<cruise>
+  <pipelines group="DevelopmentMaster">
+    <pipeline name="ax1_utils">
+      <environmentvariables>
+        <variable name="ENV">
+          <value>test</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="https://github.com/thomasf1234/ax1_utils.git" />
+      </materials>
+      <stage name="buildTest" cleanWorkingDir="true">
+        <jobs>
+          <job name="buildTest">
+            <tasks>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>install</arg>
+                <arg>--clean</arg>
+                <arg>--path</arg>
+                <arg>vendor/bundle</arg>
+              </exec>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>exec</arg>
+                <arg>rspec</arg>
+                <arg>spec/</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+            <resources>
+              <resource>builder</resource>
+            </resources>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="yugioh_x2">
+      <environmentvariables>
+        <variable name="ENV">
+          <value>test</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="https://github.com/thomasf1234/yugioh_x2.git" />
+      </materials>
+      <stage name="buildTest" cleanWorkingDir="true">
+        <jobs>
+          <job name="buildTest">
+            <tasks>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>install</arg>
+                <arg>--clean</arg>
+                <arg>--path</arg>
+                <arg>vendor/bundle</arg>
+              </exec>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>exec</arg>
+                <arg>rspec</arg>
+                <arg>spec/</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+            <resources>
+              <resource>builder</resource>
+            </resources>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="AECCClient">
+      <environmentvariables>
+        <variable name="ENV">
+          <value>test</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="https://github.com/thomasf1234/AECCClient.git" />
+      </materials>
+      <stage name="buildTest" cleanWorkingDir="true">
+        <jobs>
+          <job name="buildTest">
+            <tasks>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>install</arg>
+                <arg>--clean</arg>
+                <arg>--path</arg>
+                <arg>vendor/bundle</arg>
+              </exec>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>exec</arg>
+                <arg>rspec</arg>
+                <arg>spec/</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+            <resources>
+              <resource>builder</resource>
+            </resources>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+  <pipelines group="DevelopmentBranches">
+    <pipeline name="yugioh_x2-Branch">
+      <environmentvariables>
+        <variable name="ENV">
+          <value>test</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <git url="https://github.com/thomasf1234/yugioh_x2.git" />
+      </materials>
+      <stage name="buildTest" cleanWorkingDir="true">
+        <jobs>
+          <job name="buildTest">
+            <tasks>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>install</arg>
+                <arg>--clean</arg>
+                <arg>--path</arg>
+                <arg>vendor/bundle</arg>
+              </exec>
+              <exec command="/usr/local/bin/ruby2.4/bundle">
+                <arg>exec</arg>
+                <arg>rspec</arg>
+                <arg>spec/</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+            <resources>
+              <resource>builder</resource>
+            </resources>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+</cruise>
+EOF
+
+    REXML::Document.new(pipelines_elements_raw).get_elements("//pipelines")
   end
 end
 

@@ -10,8 +10,9 @@ namespace :admin do
     begin
       Ax1Utils::SLogger.instance.clear($log_name)
 
+      terminal = Ax1Infra::Terminal.new
       Ax1Utils::SLogger.instance.info($log_name, "Provisioning host: #{host}, environment: #{env}")
-      remote_provisioner = Ax1Infra::RemoteProvisioner.new(Terminal.new, host, env)
+      remote_provisioner = Ax1Infra::RemoteProvisioner.new(terminal, host, env)
 
       Ax1Utils::SLogger.instance.info($log_name, "Deploy/Run bootstrap")
       remote_provisioner.bootstrap

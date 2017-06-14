@@ -15,8 +15,12 @@ node "default" {
   include role::proxy
 }
 
-node "ax1-gobase" {
+node "dev-gobase" {
   include role::gocd_base
+}
+
+node "ax1-yugiohx2" {
+  include role::yugioh_x2
 }
 
 stage { 'post-main':

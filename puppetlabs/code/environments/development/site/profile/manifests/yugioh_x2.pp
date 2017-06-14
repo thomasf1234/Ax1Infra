@@ -6,7 +6,7 @@ class profile::yugioh_x2 {
   $user = 'yugioh_x2'
   $user_home = "/home/${user}"
 
-  user { "${user}":
+  user { $user:
     ensure     => 'present',
     managehome => true,
   }
@@ -17,6 +17,13 @@ class profile::yugioh_x2 {
     require => User[$user]
   }
 
-
+  class { "yugioh_x2":
+    server_port => 2000,
+    server_root => "/opt/abstractx1/yugioh_x2",
+    owner => $user,
+    server_env => $environment,
+    health_check_end_point => '/healthcheck',
+    require => User[$user]
+  }
 }
 

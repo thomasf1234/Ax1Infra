@@ -10,17 +10,12 @@ parses json file
       raise(Puppet::ParseError, "utils_json_parse(): Wrong number of arguments given (#{args.size} for 1)")
     end
 
-    path = args[0]
+    json = args[0]
 
-    if !path.kind_of?(String)
+    if !json.kind_of?(String)
       raise(Puppet::ParseError, "utils_json_parse(): Illegal type, path must extend String. #{path.class} given")
     end
 
-    if File.exists?(path)
-      json = File.read(path).strip
-      JSON.parse(json)
-    else
-      raise(Puppet::ParseError, "utils_json_parse(): File not found at #{path}")
-    end
+    JSON.parse(json.strip)
   end
 end
