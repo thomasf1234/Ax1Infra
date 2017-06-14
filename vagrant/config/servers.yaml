@@ -2,8 +2,8 @@
   environment: puppet_test
   hostname: puppet-test
   private_network_ip: 192.168.20.23
-  box: xenial-server-64-complete-setup
-  box_url: vagrant/base_boxes/xenial-server-base-box-2017-04-20.box
+  box: puppet-test-complete-setup
+  box_url: vagrant/base_boxes/puppet-test-base-box-2017-06-14.box
   cpus: 2
   memory: 2048
 

@@ -1,0 +1,5 @@
+#!/bin/bash
+#exit on error
+set -e
+
+ENV=development irb -r ./application.rb

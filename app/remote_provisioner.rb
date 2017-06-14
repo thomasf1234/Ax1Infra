@@ -1,10 +1,10 @@
 module Ax1Infra
   class RemoteProvisioner
-    def initialize(host, environment, port=22)
+    def initialize(terminal, host, environment, port=22)
+      @terminal = terminal
       @host = host
       @port = port
       @environment = environment
-      @terminal = Terminal.new
     end
 
     def bootstrap
@@ -36,6 +36,18 @@ module Ax1Infra
           Ax1Utils::SLogger.instance.error($log_name, se.backtrace.join("\n"))
           raise se
         end
+      end
+    end
+
+    def copy_and_execute_site_manifest(local_relative_manifest_path)
+      if File.exists?(local_relative_manifest_path)
+        remote_manifest_destination = File.join('/etc/puppetlabs/code/environments', @environment, 'manifests', 'site.pp')
+
+        @terminal.exec(@terminal.scp_command("deploy", @host, @port, local_relative_manifest_path, "/tmp/site.pp", ssh_options))
+        @terminal.exec(@terminal.ssh_command("deploy", @host, @port, "sudo mv /tmp/site.pp #{remote_manifest_destination}", ssh_options))
+        run_puppet
+      else
+        raise ArgumentError.new("Host manifest not found: #{local_relative_manifest_path}")
       end
     end
 
