@@ -1,10 +1,13 @@
 define gocd::agent(
   $go_server_ip,
   $go_server_ssl_port,
+  $go_agent_auto_register_key ='4280ef4d-48b6-42ec-9e0f-65d7dd05fe07',
+  $go_agent_resources = []
 ) {
+  $go_agent_name = $name
 
   file {
-    "/etc/default/${name}":
+    "/etc/default/${go_agent_name}":
       owner   => "root",
       group   => "go",
       mode    => '640',
@@ -14,7 +17,7 @@ define gocd::agent(
   }
 
   file {
-    "/etc/init.d/${name}":
+    "/etc/init.d/${go_agent_name}":
       owner   => "root",
       group   => "root",
       mode    => '755',
@@ -23,13 +26,13 @@ define gocd::agent(
       require => Class["gocd::agent_package"]
   }
 
-  exec {"update init script header info for ${name}":
-    command => "sed -i 's/# Provides: go-agent$/# Provides: ${name}/g' /etc/init.d/${name}",
-    require => File["/etc/init.d/${name}"]
+  exec {"update init script header info for ${go_agent_name}":
+    command => "sed -i 's/# Provides: go-agent$/# Provides: ${go_agent_name}/g' /etc/init.d/${go_agent_name}",
+    require => File["/etc/init.d/${go_agent_name}"]
   }
 
   file {
-    "/var/lib/${name}":
+    "/var/lib/${go_agent_name}":
       ensure => directory,
       owner   => "go",
       group   => "go",
@@ -38,7 +41,26 @@ define gocd::agent(
   }
 
   file {
-    "/var/log/${name}":
+    "/var/lib/${go_agent_name}/config":
+      ensure  => directory,
+      owner   => "go",
+      group   => "go",
+      mode    => '0775',
+      require => File["/var/lib/${go_agent_name}"]
+  }
+
+  file {
+    "/var/lib/${go_agent_name}/config/autoregister.properties":
+      owner   => "go",
+      group   => "go",
+      mode    => '0664',
+      replace => false,
+      content => template("gocd/var/lib/go-agent/config/autoregister.properties.erb"),
+      require => File["/var/lib/${go_agent_name}/config"]
+  }
+
+  file {
+    "/var/log/${go_agent_name}":
       ensure => directory,
       owner   => "go",
       group   => "go",
@@ -47,7 +69,7 @@ define gocd::agent(
   }
 
   file {
-    "/usr/share/${name}" :
+    "/usr/share/${go_agent_name}" :
       ensure => link,
       target => "/usr/share/go-agent",
       owner => root,
@@ -56,16 +78,16 @@ define gocd::agent(
       require => Class["gocd::agent_package"]
   }
 
-  exec { "add go-agent ${name} service":
-    command => "update-rc.d ${name} defaults",
-    require => [ Class["gocd::agent_package"], File["/etc/init.d/${name}"]]
+  exec { "add go-agent ${go_agent_name} service":
+    command => "update-rc.d ${go_agent_name} defaults",
+    require => [ Class["gocd::agent_package"], File["/etc/init.d/${go_agent_name}"]]
   }
 
-  service { $name:
+  service { $go_agent_name:
     ensure => running,
     enable => true,
     hasstatus => true,
-    subscribe => File["/etc/default/${name}"],
-    require => Exec["add go-agent ${name} service"]
+    subscribe => File["/etc/default/${go_agent_name}"],
+    require => Exec["add go-agent ${go_agent_name} service"]
   }
 }

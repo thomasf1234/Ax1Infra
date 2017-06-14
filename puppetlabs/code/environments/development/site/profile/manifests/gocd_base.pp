@@ -19,12 +19,14 @@ class profile::gocd_base {
   gocd::agent { "go-agent-1":
     go_server_ip => $go_server_ip,
     go_server_ssl_port => $go_server_ssl_port,
+    go_agent_resources => ["builder", "provisioner"],
     require => Class["gocd::agent_package"]
   }
 
   gocd::agent { "go-agent-2":
     go_server_ip => $go_server_ip,
     go_server_ssl_port => $go_server_ssl_port,
+    go_agent_resources => ["builder", "provisioner"],
     require => Class["gocd::agent_package"]
   }
 

@@ -7,6 +7,7 @@ require 'securerandom'
 class BootstrapGoServer
   PASSWORD_FILE_PATH = "/etc/go/htpasswd"
   CRUISE_CONFIG_PATH = "/etc/go/cruise-config.xml"
+  AGENT_AUTO_REGISTER_KEY = '4280ef4d-48b6-42ec-9e0f-65d7dd05fe07'
 
   def perform
     bootstrap_password_file
@@ -39,6 +40,8 @@ class BootstrapGoServer
       if server_element.nil?
         puts "No <server> element found in #{CRUISE_CONFIG_PATH}. Exiting"
       else
+        server_element.add_attribute('agentAutoRegisterKey', AGENT_AUTO_REGISTER_KEY)
+
         if server_element.get_elements("//security").empty?
           puts "No <security> element found. Adding a default configuration"
           security_element = build_default_security_element
