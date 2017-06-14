@@ -11,6 +11,10 @@ module SpecHelper
       @terminal.exec(@terminal.ssh_command("deploy", @host, @port, command, ssh_options))
     end
 
+    def scp(local_relative_manifest_path, remote_destination_path)
+      @terminal.exec(@terminal.scp_command("deploy", @host, @port, local_relative_manifest_path, remote_destination_path, ssh_options))
+    end
+
     def package_installed?(package)
       begin
         ssh("dpkg -s #{package}").match(/Status:.*/).to_s.split(':').last.strip == "install ok installed"
