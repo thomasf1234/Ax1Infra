@@ -1,0 +1,17 @@
+- name: puppet_test
+  environment: puppet_test
+  hostname: puppet-test
+  private_network_ip: 192.168.20.23
+  box: xenial-server-64-complete-setup
+  box_url: vagrant/base_boxes/xenial-server-base-box-2017-04-20.box
+  cpus: 2
+  memory: 2048
+
+- name: dev_gobase
+  environment: development
+  hostname: dev-gobase
+  private_network_ip: 192.168.20.24
+  box: xenial-server-64-complete-setup
+  box_url: vagrant/base_boxes/xenial-server-base-box-2017-04-20.box
+  cpus: 2
+  memory: 2048
