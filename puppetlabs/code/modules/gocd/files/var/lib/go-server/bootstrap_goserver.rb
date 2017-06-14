@@ -1,12 +1,37 @@
 #Ubuntu ruby script to bootstrap a go-server
 require 'rexml/document'
 require 'digest/sha1'
+require 'fileutils'
+require 'securerandom'
 
 class BootstrapGoServer
-  PASSWORD_FILE_PATH = "/var/lib/go-server/htpasswd"
+  PASSWORD_FILE_PATH = "/etc/go/htpasswd"
   CRUISE_CONFIG_PATH = "/etc/go/cruise-config.xml"
 
   def perform
+    bootstrap_password_file
+    bootstrap_cruise_config
+  end
+
+  protected
+  def bootstrap_password_file
+    if File.exist?(PASSWORD_FILE_PATH)
+      puts "Password file #{PASSWORD_FILE_PATH} already exists. Skipping bootstrap_password_file"
+    else
+      dev_htpasswd_entry = htpasswd_entry("dev", "dev")
+      admin_htpasswd_entry = htpasswd_entry("admin", "admin")
+
+      File.open(PASSWORD_FILE_PATH, "w") do |file|
+        file.puts(dev_htpasswd_entry)
+        file.puts(admin_htpasswd_entry)
+      end
+
+      FileUtils.chown('go', 'go', PASSWORD_FILE_PATH)
+      File.chmod(0644, PASSWORD_FILE_PATH)
+    end
+  end
+
+  def bootstrap_cruise_config
     if File.exist?(CRUISE_CONFIG_PATH)
       existing_cruise_config = REXML::Document.new(File.read(CRUISE_CONFIG_PATH))
       server_element = existing_cruise_config.get_elements("//server").first
@@ -23,11 +48,11 @@ class BootstrapGoServer
             existing_cruise_config.write(file)
           end
         else
-          puts "An existing <security> element found. Exiting"
+          puts "An existing <security> element found. Skipping bootstrap_cruise_config"
         end
       end
     else
-      puts "No cruise-config.xml found at #{CRUISE_CONFIG_PATH}. Exiting..."
+      puts "No cruise-config.xml found at #{CRUISE_CONFIG_PATH}. Skipping bootstrap_cruise_config"
     end
   end
 
@@ -54,7 +79,7 @@ class BootstrapGoServer
   def auth_configs_element
     base_element = REXML::Element.new('authConfigs')
     auth_config_element = REXML::Element.new('authConfig')
-    auth_config_element.add_attributes({'id' => 'auth-config-id', 'pluginId' => 'cd.go.authentication.passwordfile'})
+    auth_config_element.add_attributes({'id' => SecureRandom.uuid, 'pluginId' => 'cd.go.authentication.passwordfile'})
 
     property_element = REXML::Element.new('property')
 
@@ -97,6 +122,10 @@ class BootstrapGoServer
   def current_version
     raw_version = `dpkg -s go-server`.match(/Version:.*/).to_s.split(':').last.strip
     Gem::Version.new(raw_version)
+  end
+
+  def htpasswd_entry(username, password)
+    "#{username}:{SHA}#{Digest::SHA1.base64digest(password)}"
   end
 end
 
