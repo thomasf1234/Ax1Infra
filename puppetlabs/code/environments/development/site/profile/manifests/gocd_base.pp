@@ -1,5 +1,6 @@
 class profile::gocd_base {
   $go_server_ip = "localhost"
+  $go_server_port = "8153"
   $go_server_ssl_port = "8154"
 
   include sqlite
@@ -18,6 +19,7 @@ class profile::gocd_base {
 
   gocd::agent { "go-agent-1":
     go_server_ip => $go_server_ip,
+    go_server_port => $go_server_port,
     go_server_ssl_port => $go_server_ssl_port,
     go_agent_resources => ["builder", "provisioner"],
     require => Class["gocd::agent_package"]
@@ -25,6 +27,7 @@ class profile::gocd_base {
 
   gocd::agent { "go-agent-2":
     go_server_ip => $go_server_ip,
+    go_server_port => $go_server_port,
     go_server_ssl_port => $go_server_ssl_port,
     go_agent_resources => ["builder", "provisioner"],
     require => Class["gocd::agent_package"]

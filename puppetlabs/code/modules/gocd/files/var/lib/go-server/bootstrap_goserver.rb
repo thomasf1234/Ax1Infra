@@ -216,10 +216,19 @@ class BootstrapGoServer
                 <arg>spec/</arg>
                 <runif status="passed" />
               </exec>
+              <exec command="ax1package">
+                <arg>-p</arg>
+                <arg>.</arg>
+                <runif status="passed" />
+              </exec>
             </tasks>
             <resources>
               <resource>builder</resource>
             </resources>
+            <artifacts>
+              <artifact src="build/yugioh_x2-release.tgz" dest="build/" />
+              <artifact src="build/yugioh_x2-release.tgz.json" dest="build/" />
+            </artifacts>
           </job>
         </jobs>
       </stage>

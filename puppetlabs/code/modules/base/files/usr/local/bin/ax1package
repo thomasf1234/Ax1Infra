@@ -46,12 +46,14 @@ function pack {
   #send a file with the key
 
   #example: curl -k 'https://ci.example.com/go/files/PipelineName/541/StageName/1/JobName/path/to/file' -u 'username:password'
-  local SRC_URL="https://${GO_SERVER_IP}/go/files/${GO_PIPELINE_NAME}/${GO_PIPELINE_COUNTER}/${GO_STAGE_NAME}/${GO_STAGE_COUNTER}/${GO_JOB_NAME}/${ARTIFACT_NAME}"
+  local GO_ENDPOINT="/files/${GO_PIPELINE_NAME}/${GO_PIPELINE_COUNTER}/${GO_STAGE_NAME}/${GO_STAGE_COUNTER}/${GO_JOB_NAME}/${ARTIFACT_NAME}"
+  local SRC_SECURE_URL="${GO_SERVER_URL}${GO_ENDPOINT}"
+  local SRC_INSECURE_URL="${GO_SERVER_INSECURE_URL}${GO_ENDPOINT}"
   local CHECKSUM=$(sha256sum $RELEASE_PATH |awk '{print$1}')
   cp /dev/null ${RELEASE_PATH}.json
 
   echo "creating file ${RELEASE_PATH}.json"
-  echo -e "{\"checksum_algorithm\":\"SHA-256\", \"checksum\":\"$CHECKSUM\", \"goartifact_source_url\":\"$SRC_URL\"}"  > ${RELEASE_PATH}.json
+  echo -e "{\"checksum_algorithm\":\"SHA-256\", \"checksum\":\"$CHECKSUM\", \"goartifact_source_insecure_url\":\"$SRC_INSECURE_URL\", \"goartifact_source_secure_url\":\"$SRC_SECURE_URL\"}"  > ${RELEASE_PATH}.json
 }
 
 function unpack {

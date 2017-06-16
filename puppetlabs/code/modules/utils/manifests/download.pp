@@ -1,13 +1,18 @@
+#TODO : put verify path into /tmp
 define utils::download (
   $source_url,
   $destination_dir = "/tmp",
   $checksum_algorithm,
   $checksum,
+  $owner = $facts["identity"]["user"],
+  $group = $facts["identity"]["group"],
+  $mode = "644",
   $userpass = undef
 ) {
   $source_name = utils_basename($source_url)
   $destination = utils_file_join($destination_dir, $source_name)
-  $curl_default_command = "curl -k ${source_url} -o ${$destination}"
+  $curl_default_command = "curl -k ${source_url} -o ${destination}"
+  $thirty_minutes = 1800
 
   $cleaned_name = regsubst($name,' ','_','G')
 
@@ -25,22 +30,31 @@ define utils::download (
 
     exec { "${cleaned_name}-download_file":
       command => "${curl_command}",
+      timeout => $thirty_minutes,
       require => Notify["${cleaned_name} utils::download downloading new $source_url checksum didnt match"]
+    }
+
+    file {"$destination":
+      owner => $owner,
+      group => $group,
+      mode  => $mode,
+      require => Exec["${cleaned_name}-download_file"]
     }
 
     case $checksum_algorithm {
       'SHA-256': {
-        $verify_path = "${destination}_${cleaned_name}_verify.sha256"
+        $verify_name =  "${source_name}_verify.sha256"
+        $verify_path = utils_file_join("/tmp", $verify_name)
 
-        file { "${cleaned_name}-checksum":
-          path => "${verify_path}",
+        file { $verify_path:
           content => "${checksum} ${destination}",
+          replace => true,
           ensure => present
         }
 
         exec { "${cleaned_name}-verify_checksum":
           command => "sha256sum -c ${verify_path}",
-          require => [ Exec["${cleaned_name}-download_file"], File["${cleaned_name}-checksum"] ]
+          require => [ Exec["${cleaned_name}-download_file"], File[$verify_path] ]
         }
 
         notify{"${cleaned_name} utils::download $checksum matched download suceeded":

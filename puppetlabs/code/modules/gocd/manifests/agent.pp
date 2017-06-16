@@ -1,5 +1,6 @@
 define gocd::agent(
   $go_server_ip,
+  $go_server_port,
   $go_server_ssl_port,
   $go_agent_auto_register_key ='4280ef4d-48b6-42ec-9e0f-65d7dd05fe07',
   $go_agent_resources = []
